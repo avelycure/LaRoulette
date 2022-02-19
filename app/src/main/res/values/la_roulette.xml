@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <declare-styleable name="LaRoulette">
+        <attr name="color_dark" format="color"/>
+        <attr name="color_light" format="color"/>
+    </declare-styleable>
+</resources>
