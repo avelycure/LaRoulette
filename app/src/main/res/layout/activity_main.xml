@@ -6,7 +6,7 @@
     android:layout_height="match_parent"
     tools:context=".MainActivity">
 
-    <com.avelycure.laroulette.Roulette
+    <com.avelycure.laroulette.NewRoulette
         android:layout_width="400dp"
         android:layout_height="400dp"
         android:id="@+id/roulette"
