@@ -66,17 +66,21 @@ class NewRoulette : View {
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
         val desiredWidth = 256
         val desiredHeight = 256
-        val widthMode = View.MeasureSpec.getMode(widthMeasureSpec)
-        val widthSize = View.MeasureSpec.getSize(widthMeasureSpec)
-        val heightMode = View.MeasureSpec.getMode(heightMeasureSpec)
-        val heightSize = View.MeasureSpec.getSize(heightMeasureSpec)
+        val widthMode = MeasureSpec.getMode(widthMeasureSpec)
+        val widthSize = MeasureSpec.getSize(widthMeasureSpec)
+        val heightMode = MeasureSpec.getMode(heightMeasureSpec)
+        val heightSize = MeasureSpec.getSize(heightMeasureSpec)
 
-        rouletteWidth = if (widthMode == View.MeasureSpec.EXACTLY) {
-            widthSize
-        } else if (widthMode == View.MeasureSpec.AT_MOST) {
-            min(desiredWidth, widthSize)
-        } else {
-            desiredWidth
+        rouletteWidth = when (widthMode) {
+            MeasureSpec.EXACTLY -> {
+                widthSize
+            }
+            MeasureSpec.AT_MOST -> {
+                min(desiredWidth, widthSize)
+            }
+            else -> {
+                desiredWidth
+            }
         }
 
         rouletteHeight = if (heightMode == View.MeasureSpec.EXACTLY) {
@@ -185,6 +189,9 @@ class NewRoulette : View {
 
     var thread: Thread? = null
 
+    var w: Float = 0f
+    val MIN_SPEED = 1f
+
     override fun onTouchEvent(event: MotionEvent?): Boolean {
         val value = super.onTouchEvent(event)
 
@@ -204,7 +211,7 @@ class NewRoulette : View {
                     val dt = (t2 - t1) / 1000f
                     val dr = sqrt(((x2 - x1) * (x2 - x1)) + (y2 - y1) * (y2 - y1)) / 100f
 
-                    val v0 = (dr / dt)
+                    val v0 = (dr / dt) * chooseSpeedDirection()
 
                     Log.d("mytag", "dt: $dt")
                     Log.d("mytag", "dr: $dr")
@@ -214,15 +221,15 @@ class NewRoulette : View {
 
                     // angle speed in 1/s
                     val w0 = v0 / r
+                    w = w0
 
                     // accelerate m / s^2
-                    val e = 100f
+                    val e = 100f * chooseSpeedDirection()
 
                     // angle radians
                     var phi = 0f
 
                     // time variables
-
                     val start = Calendar.getInstance().timeInMillis
 
                     //0 = w0 - a * t
@@ -232,13 +239,16 @@ class NewRoulette : View {
                     Log.d("mytag", "st $start")
                     Log.d("mytag", "w0: $w0")
 
-                    while (t < finish) {
+                    Log.d("mytag", "ent ${abs(w)}")
+                    while (abs(w) > MIN_SPEED) {
                         if (thread?.isInterrupted == true) {
                             thread = null
                             break
                         }
+
                         t = (Calendar.getInstance().timeInMillis - start) / 1000f
-                        //Log.d("mytag", "t $t")
+
+                        w = w0 - e * t
                         phi = w0 * t - e * t * t / 2f
 
                         h.sendMessage(Message().apply {
@@ -246,10 +256,10 @@ class NewRoulette : View {
                                 putFloat("phi", phi)
                             }
                         })
-                        //Log.d("mytag", "Send $t from handler $phi")
+                        Log.d("mytag", "Send $t from handler $phi")
                         try {
                             Thread.sleep(4)
-                        } catch (e: Exception) {
+                        } catch (e: InterruptedException) {
                             break
                         }
                     }
@@ -262,6 +272,7 @@ class NewRoulette : View {
                     startAngle = countAngle(event.x, event.y)
                     x1 = event.x
                     y1 = event.y
+                    Log.d("mytag", "ORIENTATION1: " + event.orientation)
                     t1 = event.eventTime
                     thread?.interrupt()
                     return true
@@ -291,6 +302,53 @@ class NewRoulette : View {
             }
         }
         return value
+    }
+
+    // + -> clockwise
+    // - -> counterclockwise
+    private fun chooseSpeedDirection(): Int {
+        if (x2 > circleCenterX && y2 < circleCenterY && x1 > circleCenterX && y1 < circleCenterY) {
+            //in this domain we catch all up movements
+            if (y2 < y1) {
+                if (abs(atan((y2 - y1) / (x2 - x1))) * R_TO_D > 45)
+                    return -1
+            }
+            Log.d("mytag", "1")
+        } else if (x2 > circleCenterX && y2 > circleCenterY && x1 > circleCenterX && y1 > circleCenterY) {
+            //in this domain we catch all right movements
+            if (x2 > x1) {
+                if (abs(atan((y2 - y1) / (x2 - x1))) * R_TO_D < 45)
+                    return -1
+            }
+            Log.d("mytag", "2")
+        } else if (x2 < circleCenterX && y2 > circleCenterY && x1 < circleCenterX && y1 > circleCenterY) {
+            //in this domain we catch all down movements
+            if (y2 > y1) {
+                if (atan((y2 - y1) / (x2 - x1)) * R_TO_D > 45)
+                    return -1
+            }
+            Log.d("mytag", "3")
+        } else if (x2 < circleCenterX && y2 < circleCenterY && x1 < circleCenterX && y1 < circleCenterY) {
+            //in this domain we catch all left movements
+            if (x2 < x1) {
+                if (abs(atan((y2 - y1) / (x2 - x1))) * R_TO_D < 45)
+                    return -1
+            }
+            Log.d("mytag", "4")
+        } else if (x2 < circleCenterX && y2 < circleCenterY && x1 > circleCenterX && y1 < circleCenterY) {
+            Log.d("mytag", "5")
+            return -1
+        } else if (x2 > circleCenterX && y2 > circleCenterY && x1 < circleCenterX && y1 > circleCenterY) {
+            Log.d("mytag", "6")
+            return -1
+        } else if (x2 > circleCenterX && y2 < circleCenterY && x1 > circleCenterX && y1 > circleCenterY) {
+            Log.d("mytag", "7")
+            return -1
+        } else if (x2 < circleCenterX && y2 > circleCenterY && x1 < circleCenterX && y1 < circleCenterY) {
+            Log.d("mytag", "8")
+            return -1
+        }
+        return 1
     }
 
     val R_TO_D = 57.2958
