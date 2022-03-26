@@ -189,8 +189,19 @@ class NewRoulette : View {
 
     var thread: Thread? = null
 
-    var w: Float = 0f
     val MIN_SPEED = 1f
+
+    var startTime = 0L
+
+    var dt = 0f
+    var dr = 0f
+
+    val r = 0.03f
+    var w0 = 0f
+    var v0 = 0f
+
+    var e = 0f
+    var w: Float = 0f
 
     override fun onTouchEvent(event: MotionEvent?): Boolean {
         val value = super.onTouchEvent(event)
@@ -203,65 +214,77 @@ class NewRoulette : View {
 
         when (event.action) {
             MotionEvent.ACTION_UP -> {
+                if (check) {
+                    var temp = x2
+                    x2 = x1
+                    x1 = temp
+
+                    temp = y2
+                    y2 = y1
+                    y1 = temp
+
+                    val temp2 = t2
+                    t2 = t1
+                    t1 = temp2
+                }
                 x2 = event.x
                 y2 = event.y
                 t2 = event.eventTime
 
-                thread = thread {
-                    val dt = (t2 - t1) / 1000f
-                    val dr = sqrt(((x2 - x1) * (x2 - x1)) + (y2 - y1) * (y2 - y1)) / 100f
+                dt = (t2 - t1) / 1000f
+                dr = sqrt(((x2 - x1) * (x2 - x1)) + (y2 - y1) * (y2 - y1)) / 100f
 
-                    val v0 = (dr / dt) * chooseSpeedDirection()
+                v0 = (dr / dt) * chooseSpeedDirection() * 0.8f
+                // radius in meters
 
-                    Log.d("mytag", "dt: $dt")
-                    Log.d("mytag", "dr: $dr")
+                // accelerate m / s^2
+                e = 100f * chooseSpeedDirection()
 
-                    // radius in meters
-                    val r = 0.03f
+                // angle speed in 1/s
+                val w0New = v0 / r
 
-                    // angle speed in 1/s
-                    val w0 = v0 / r
+                synchronized(w) {
+                    if (thread == null) {
+                        w0 = w0New
+                    } else {
+                        w0 += w0New
+                    }
                     w = w0
+                    startTime = Calendar.getInstance().timeInMillis
+                }
 
-                    // accelerate m / s^2
-                    val e = 100f * chooseSpeedDirection()
+                if (thread == null) {
+                    thread = thread {
+                        // angle radians
+                        var phi = 0f
 
-                    // angle radians
-                    var phi = 0f
+                        var t = 0f
 
-                    // time variables
-                    val start = Calendar.getInstance().timeInMillis
-
-                    //0 = w0 - a * t
-                    val finish = w0 / e
-                    var t = 0f
-                    Log.d("mytag", "fin $finish")
-                    Log.d("mytag", "st $start")
-                    Log.d("mytag", "w0: $w0")
-
-                    Log.d("mytag", "ent ${abs(w)}")
-                    while (abs(w) > MIN_SPEED) {
-                        if (thread?.isInterrupted == true) {
-                            thread = null
-                            break
-                        }
-
-                        t = (Calendar.getInstance().timeInMillis - start) / 1000f
-
-                        w = w0 - e * t
-                        phi = w0 * t - e * t * t / 2f
-
-                        h.sendMessage(Message().apply {
-                            data = Bundle().apply {
-                                putFloat("phi", phi)
+                        while (abs(w) > MIN_SPEED) {
+                            if (thread?.isInterrupted == true) {
+                                break
                             }
-                        })
-                        Log.d("mytag", "Send $t from handler $phi")
-                        try {
-                            Thread.sleep(4)
-                        } catch (e: InterruptedException) {
-                            break
+
+                            t = (Calendar.getInstance().timeInMillis - startTime) / 1000f
+
+                            synchronized(w) {
+                                w = w0 - e * t
+                            }
+
+                            phi = w0 * t - e * t * t / 2f
+
+                            h.sendMessage(Message().apply {
+                                data = Bundle().apply {
+                                    putFloat("phi", phi)
+                                }
+                            })
+                            try {
+                                Thread.sleep(2)
+                            } catch (e: InterruptedException) {
+                                break
+                            }
                         }
+                        thread = null
                     }
                 }
 
@@ -270,18 +293,14 @@ class NewRoulette : View {
             MotionEvent.ACTION_DOWN -> {
                 if (dx2 + dy2 < rouletteRadius * rouletteRadius) {
                     startAngle = countAngle(event.x, event.y)
-                    x1 = event.x
-                    y1 = event.y
-                    Log.d("mytag", "ORIENTATION1: " + event.orientation)
-                    t1 = event.eventTime
-                    thread?.interrupt()
+                    //stoppedRoullete = false
                     return true
                 }
             }
             MotionEvent.ACTION_MOVE -> {
                 if (dx2 + dy2 < rouletteRadius * rouletteRadius) {
                     //we are inside roulette
-                    /*if (check) {
+                    if (check) {
                         x2 = event.x
                         y2 = event.y
                         t2 = event.eventTime
@@ -290,9 +309,12 @@ class NewRoulette : View {
                         y1 = event.y
                         t1 = event.eventTime
                     }
-                    check = !check*/
+                    check = !check
                     //if check is true -> 1 point is last modified(the end of the vector)
                     //if check is false -> 2 point is last modified(the end of the vector)
+
+                    if (sqrt(((x2 - x1) * (x2 - x1)) + (y2 - y1) * (y2 - y1)) < 20)
+                        thread?.interrupt()
 
                     sweepAngle = countAngle(event.x, event.y) - startAngle
 
