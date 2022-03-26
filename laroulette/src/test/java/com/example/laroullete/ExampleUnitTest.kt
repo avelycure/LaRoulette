@@ -1,4 +1,4 @@
-package com.avelycure.laroulette
+package com.example.laroullete
 
 import org.junit.Test
 

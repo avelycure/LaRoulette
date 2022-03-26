@@ -1,4 +1,4 @@
-package com.avelycure.laroulette
+package com.example.laroullete
 
 object RouletteConstants {
     const val R_TO_D = 57.2958

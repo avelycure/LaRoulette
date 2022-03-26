@@ -2,6 +2,7 @@ package com.avelycure.laroulette
 
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import com.example.laroullete.Roulette
 
 class MainActivity : AppCompatActivity() {
     lateinit var roulette: Roulette

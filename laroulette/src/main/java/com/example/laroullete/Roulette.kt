@@ -1,4 +1,4 @@
-package com.avelycure.laroulette
+package com.example.laroullete
 
 import android.annotation.SuppressLint
 import android.content.Context
@@ -9,15 +9,15 @@ import android.os.Message
 import android.util.AttributeSet
 import android.view.MotionEvent
 import android.view.View
-import com.avelycure.laroulette.RouletteConstants.ACCELERATION
-import com.avelycure.laroulette.RouletteConstants.CIRCLE_PROPORTION
-import com.avelycure.laroulette.RouletteConstants.DESIRED_HEIGHT
-import com.avelycure.laroulette.RouletteConstants.DESIRED_WIDTH
-import com.avelycure.laroulette.RouletteConstants.MAX_ROULETTE_SPEED
-import com.avelycure.laroulette.RouletteConstants.MIN_SPEED
-import com.avelycure.laroulette.RouletteConstants.PHI
-import com.avelycure.laroulette.RouletteConstants.ROULETTE_RADIUS
-import com.avelycure.laroulette.RouletteConstants.R_TO_D
+import com.example.laroullete.RouletteConstants.ACCELERATION
+import com.example.laroullete.RouletteConstants.CIRCLE_PROPORTION
+import com.example.laroullete.RouletteConstants.DESIRED_HEIGHT
+import com.example.laroullete.RouletteConstants.DESIRED_WIDTH
+import com.example.laroullete.RouletteConstants.MAX_ROULETTE_SPEED
+import com.example.laroullete.RouletteConstants.MIN_SPEED
+import com.example.laroullete.RouletteConstants.PHI
+import com.example.laroullete.RouletteConstants.ROULETTE_RADIUS
+import com.example.laroullete.RouletteConstants.R_TO_D
 import java.util.*
 import kotlin.concurrent.thread
 import kotlin.math.*
