@@ -12,11 +12,7 @@ object RouletteConstants {
 
     const val CIRCLE_PROPORTION = 0.8f
 
-    //text
-    const val H_OFFSET = 10f
-    const val V_OFFSET = 10f
-
     const val ACCELERATION = 100f
     const val ROULETTE_RADIUS = 0.03f
-    const val MAX_ROULLETTE_SPEED = 2200f
+    const val MAX_ROULETTE_SPEED = 2200f
 }

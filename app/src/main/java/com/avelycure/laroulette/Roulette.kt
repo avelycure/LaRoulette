@@ -7,26 +7,20 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Message
 import android.util.AttributeSet
-import android.util.Log
 import android.view.MotionEvent
 import android.view.View
 import com.avelycure.laroulette.RouletteConstants.ACCELERATION
 import com.avelycure.laroulette.RouletteConstants.CIRCLE_PROPORTION
 import com.avelycure.laroulette.RouletteConstants.DESIRED_HEIGHT
 import com.avelycure.laroulette.RouletteConstants.DESIRED_WIDTH
-import com.avelycure.laroulette.RouletteConstants.H_OFFSET
-import com.avelycure.laroulette.RouletteConstants.MAX_ROULLETTE_SPEED
+import com.avelycure.laroulette.RouletteConstants.MAX_ROULETTE_SPEED
 import com.avelycure.laroulette.RouletteConstants.MIN_SPEED
 import com.avelycure.laroulette.RouletteConstants.PHI
 import com.avelycure.laroulette.RouletteConstants.ROULETTE_RADIUS
 import com.avelycure.laroulette.RouletteConstants.R_TO_D
-import com.avelycure.laroulette.RouletteConstants.V_OFFSET
 import java.util.*
 import kotlin.concurrent.thread
-import kotlin.math.abs
-import kotlin.math.atan
-import kotlin.math.min
-import kotlin.math.sqrt
+import kotlin.math.*
 
 //todo when film is chosen show text to user that he can see
 //подборку этих фильмов и стрелочку влево
@@ -34,10 +28,12 @@ import kotlin.math.sqrt
 class Roulette : View {
 
     //ui
-    private var colorDark: Int = Color.BLACK
-    private var colorLight: Int = Color.RED
+    private var colorDark: Int = 0
+    private var colorLight: Int = 0
+    private var textColor: Int = 0
     private val rectF = RectF(0f, 0f, 0f, 0f)
     private val rectText = RectF(0f, 0f, 0f, 0f)
+    private val pointer = Path()
 
     //text
     private lateinit var textPath: Path
@@ -114,6 +110,19 @@ class Roulette : View {
         initElements(attrs)
     }
 
+    fun setData(
+        data: List<String>,
+        darkColor: Int = Color.BLACK,
+        lightColor: Int = Color.RED,
+        textColor: Int = Color.GRAY
+    ) {
+        this.data = data
+        this.textColor = textColor
+        textAngle = 360f / data.size
+        colorDark = darkColor
+        colorLight = lightColor
+    }
+
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
         val desiredWidth = DESIRED_WIDTH
         val desiredHeight = DESIRED_HEIGHT
@@ -152,6 +161,12 @@ class Roulette : View {
         circleCenterY = y + rouletteHeight / 2f
 
         setMeasuredDimension(rouletteWidth, rouletteHeight)
+
+        pointer.moveTo(x + rouletteWidth / 2f, y + rouletteHeight / 2f + 10)
+        pointer.lineTo(x + rouletteWidth / 2f - 120, y + rouletteHeight / 2f)
+        pointer.lineTo(x + rouletteWidth / 2f, y + rouletteHeight / 2f - 10)
+        pointer.lineTo(x + rouletteWidth / 2f, y + rouletteHeight / 2f + 10)
+        pointer.close()
     }
 
     override fun onDraw(canvas: Canvas?) {
@@ -173,7 +188,7 @@ class Roulette : View {
             canvas.drawArc(rectF, start + sweepAngle + i * textAngle, textAngle, true, paint)
 
         //draw text
-        paint.color = Color.BLACK
+        paint.color = textColor
         paint.textSize = 30f
         for (i in data.indices) {
             textPath.reset()
@@ -181,9 +196,28 @@ class Roulette : View {
                 circleCenterX,
                 circleCenterY
             )
+            paint.textAlign = Paint.Align.CENTER
             textPath.addArc(rectText, start + sweepAngle + i * textAngle, textAngle)
-            canvas.drawTextOnPath(data[i], textPath, H_OFFSET, V_OFFSET, paint)
+            canvas.drawTextOnPath(data[i], textPath, 0f, 0f, paint)
         }
+
+        paint.color = Color.GRAY
+        canvas.drawCircle(
+            x + rouletteWidth / 2f,
+            y + rouletteHeight / 2f,
+            rouletteRadius * 0.1f,
+            paint
+        )
+
+        canvas.drawPath(pointer, paint)
+
+        paint.color = colorDark
+        canvas.drawCircle(
+            x + rouletteWidth / 2f,
+            y + rouletteHeight / 2f,
+            rouletteRadius * 0.05f,
+            paint
+        )
 
     }
 
@@ -198,9 +232,6 @@ class Roulette : View {
 
         colorLight = ta.getColor(R.styleable.LaRoulette_color_light, Color.RED)
         colorDark = ta.getColor(R.styleable.LaRoulette_color_dark, Color.BLACK)
-
-        data = listOf("Action", "Drama", "Comedy", "Horror", "TvShow", "Cartoon", "War", "History")
-        textAngle = 45f
 
         textPath = Path()
         ta.recycle()
@@ -260,10 +291,10 @@ class Roulette : View {
                     if (accelerationThread == null)
                         w0 = w0New
                     else {
-                        if (abs(w0New + w0) < MAX_ROULLETTE_SPEED)
+                        if (abs(w0New + w0) < MAX_ROULETTE_SPEED)
                             w0 += w0New
                         else
-                            w0 = MAX_ROULLETTE_SPEED * chooseSpeedDirection()
+                            w0 = MAX_ROULETTE_SPEED * chooseSpeedDirection()
                     }
                     w = w0
                     startTime = Calendar.getInstance().timeInMillis
