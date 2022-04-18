@@ -63,7 +63,6 @@ class Roulette : View {
 
     //utils
     private lateinit var paint: Paint
-    private lateinit var mHandler: Handler
     private var accelerationThread: Thread? = null
     private var x1WasLastModified: Boolean = false
 
@@ -235,16 +234,6 @@ class Roulette : View {
 
         textPath = Path()
         ta.recycle()
-
-        mHandler = object : Handler(context.mainLooper) {
-            override fun handleMessage(msg: Message) {
-                super.handleMessage(msg)
-                val bundle = msg.data
-                val phi = bundle.getFloat(PHI)
-                sweepAngle = phi
-                postInvalidate()
-            }
-        }
     }
 
     private fun setX1X2Properly(event: MotionEvent) {
@@ -316,11 +305,10 @@ class Roulette : View {
 
                             phi = w0 * t - e * t * t / 2f
 
-                            mHandler.sendMessage(Message().apply {
-                                data = Bundle().apply {
-                                    putFloat(PHI, phi)
-                                }
-                            })
+                            handler.post{
+                                sweepAngle = phi
+                                postInvalidate()
+                            }
 
                             try {
                                 Thread.sleep(2)
@@ -328,8 +316,6 @@ class Roulette : View {
                                 break
                             }
                         }
-                        //start += sweepAngle
-                        //sweepAngle = 0f
 
                         accelerationThread = null
                         postInvalidate()
