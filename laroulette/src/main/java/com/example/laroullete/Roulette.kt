@@ -7,6 +7,7 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Message
 import android.util.AttributeSet
+import android.util.Log
 import android.view.MotionEvent
 import android.view.View
 import com.example.laroullete.RouletteConstants.ACCELERATION
@@ -41,9 +42,9 @@ class Roulette : View {
     private var textAngle = 0f
 
     //size
-    private var rouletteWidth: Int = 256
-    private var rouletteHeight: Int = 256
-    private val rouletteRadius: Int = 240
+    private var rouletteWidth: Int = 0
+    private var rouletteHeight: Int = 0
+    private var rouletteRadius: Int = 0
 
     //coordinates
     private var start = 0F
@@ -109,6 +110,12 @@ class Roulette : View {
         initElements(attrs)
     }
 
+    private var stopListener: OnRouletteStoppedListener? = null
+
+    fun setOnStopListener(listener: OnRouletteStoppedListener) {
+        stopListener = listener
+    }
+
     fun setData(
         data: List<String>,
         darkColor: Int = Color.BLACK,
@@ -122,6 +129,7 @@ class Roulette : View {
         colorLight = lightColor
     }
 
+    // x, y - coordinates of the left top corner of the roulette
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
         val desiredWidth = DESIRED_WIDTH
         val desiredHeight = DESIRED_HEIGHT
@@ -158,6 +166,7 @@ class Roulette : View {
 
         circleCenterX = x + rouletteWidth / 2f
         circleCenterY = y + rouletteHeight / 2f
+        rouletteRadius = (rouletteWidth / 2f).toInt()
 
         setMeasuredDimension(rouletteWidth, rouletteHeight)
 
@@ -175,11 +184,13 @@ class Roulette : View {
         //draw background
         paint.color = colorLight
         canvas.drawCircle(
-            x + rouletteWidth / 2f,
-            y + rouletteHeight / 2f,
+            circleCenterX,
+            circleCenterY,
             rouletteRadius.toFloat(),
             paint
         )
+
+        Log.d("mytag", (start + sweepAngle).toString())
 
         //draw sectors
         paint.color = colorDark
@@ -200,10 +211,11 @@ class Roulette : View {
             canvas.drawTextOnPath(data[i], textPath, 0f, 0f, paint)
         }
 
+        //grey circles inside
         paint.color = Color.GRAY
         canvas.drawCircle(
-            x + rouletteWidth / 2f,
-            y + rouletteHeight / 2f,
+            circleCenterX,
+            circleCenterY,
             rouletteRadius * 0.1f,
             paint
         )
@@ -212,8 +224,8 @@ class Roulette : View {
 
         paint.color = colorDark
         canvas.drawCircle(
-            x + rouletteWidth / 2f,
-            y + rouletteHeight / 2f,
+            circleCenterX,
+            circleCenterY,
             rouletteRadius * 0.05f,
             paint
         )
@@ -305,7 +317,7 @@ class Roulette : View {
 
                             phi = w0 * t - e * t * t / 2f
 
-                            handler.post{
+                            handler.post {
                                 sweepAngle = phi
                                 postInvalidate()
                             }
@@ -316,6 +328,9 @@ class Roulette : View {
                                 break
                             }
                         }
+
+                        //can be called before roulette stop
+                        stopListener?.onStop("")
 
                         accelerationThread = null
                         postInvalidate()
